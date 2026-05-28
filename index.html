@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proton Saga HMI Redesign — Group F Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5e6e0;
+    --bg-card: #fff7f4;
+    --bg-dark-panel: #3d2b33;
+    --rose: #c4727a;
+    --rose-deep: #a85560;
+    --rose-light: #e8b4b8;
+    --rose-pale: #f2d5d5;
+    --gold: #c9a96e;
+    --gold-light: #e0c992;
+    --text-dark: #3d2b33;
+    --text-body: #5a3d45;
+    --text-muted: #8c6b73;
+    --accent-red: #d32f2f;
+    --accent-green: #4caf50;
+    --accent-amber: #f9a825;
+    --glow-red: 0 0 20px rgba(211,47,47,0.35);
+    --glow-green: 0 0 12px rgba(76,175,80,0.3);
+    --shadow-soft: 0 4px 24px rgba(61,43,51,0.1);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-dark);
+    font-family: 'Source Serif 4', Georgia, serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--bg-dark-panel);
+    text-align: center;
+    padding: 28px 16px 22px;
+  }
+  .header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(18px, 3.5vw, 28px);
+    font-weight: 700;
+    color: var(--rose-light);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .header p {
+    font-size: 13px;
+    color: var(--rose-pale);
+    margin-top: 4px;
+    letter-spacing: 1px;
+    font-weight: 400;
+  }
+  .header-line {
+    width: 60px;
+    height: 3px;
+    background: var(--rose);
+    margin: 12px auto 0;
+    border-radius: 2px;
+  }
+
+  /* ── Dashboard ── */
+  .dashboard {
+    max-width: 880px;
+    margin: 20px auto;
+    padding: 0 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .section-label {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--rose-deep);
+    text-align: center;
+    margin-bottom: -6px;
+  }
+
+  /* ── Instrument Cluster ── */
+  .cluster {
+    background: linear-gradient(145deg, #2d1f25, #3d2b33);
+    border-radius: 20px;
+    padding: 28px 20px 22px;
+    position: relative;
+    box-shadow: 0 8px 32px rgba(61,43,51,0.25);
+    border: 1px solid rgba(200,160,160,0.1);
+  }
+
+  .cluster-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1fr;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .gauge-wrap { text-align: center; }
+  .gauge-label {
+    font-family: 'Playfair Display', serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--rose-light);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    opacity: 0.7;
+  }
+  .gauge-svg { width: 100%; max-width: 150px; }
+  .gauge-arc-bg { stroke: rgba(200,160,160,0.15); }
+
+  .speed-center { text-align: center; }
+  .speed-big {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(48px, 9vw, 72px);
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+  }
+  .speed-label {
+    font-family: 'Source Serif 4', serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--rose-light);
+    opacity: 0.6;
+  }
+  .gear-indicator {
+    margin-top: 6px;
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gold-light);
+  }
+
+  /* ── Rear Seat Alert Panel ── */
+  .rear-seat-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--rose-pale);
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: var(--shadow-soft);
+  }
+  .rsp-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--rose-deep);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .rsp-title .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    box-shadow: var(--glow-green);
+    animation: pulse-dot 2s infinite;
+  }
+
+  /* Car cabin top-down view */
+  .cabin-view {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+    height: 220px;
+    margin: 0 auto;
+    background: rgba(61,43,51,0.04);
+    border-radius: 14px;
+    border: 1px solid var(--rose-pale);
+  }
+  .car-outline {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 120px; height: 180px;
+    border: 2px solid var(--rose);
+    border-radius: 24px 24px 18px 18px;
+    opacity: 0.5;
+  }
+  .car-outline::before {
+    content: '';
+    position: absolute;
+    top: 20px; left: 12px; right: 12px; height: 40px;
+    border: 1px solid var(--rose-light);
+    border-radius: 10px 10px 0 0;
+    opacity: 0.5;
+  }
+  /* Seats */
+  .seat {
+    position: absolute;
+    border-radius: 6px;
+    border: 2px solid var(--rose-light);
+    background: rgba(200,160,160,0.08);
+    transition: all 0.5s;
+  }
+  .seat-fl { width: 28px; height: 32px; top: 72px; left: calc(50% - 42px); }
+  .seat-fr { width: 28px; height: 32px; top: 72px; left: calc(50% + 14px); }
+  .seat-rl { width: 28px; height: 28px; top: 130px; left: calc(50% - 42px); }
+  .seat-rr { width: 28px; height: 28px; top: 130px; left: calc(50% + 14px); }
+
+  .seat.occupied {
+    background: rgba(211,47,47,0.15);
+    border-color: var(--accent-red);
+    box-shadow: 0 0 12px rgba(211,47,47,0.3);
+    animation: seat-pulse 0.8s infinite;
+  }
+  .seat.driver {
+    background: rgba(76,175,80,0.12);
+    border-color: var(--accent-green);
+  }
+
+  .seat-label {
+    position: absolute;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+  .label-fl { top: 60px; left: calc(50% - 54px); }
+  .label-fr { top: 60px; left: calc(50% + 14px); }
+  .label-rear { top: 165px; left: 50%; transform: translateX(-50%); }
+
+  /* Child icon */
+  .child-icon {
+    position: absolute;
+    top: 126px; left: calc(50% + 16px);
+    font-size: 20px;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .child-icon.show { opacity: 1; animation: icon-bounce 0.8s infinite; }
+
+  /* Weight sensor bar */
+  .weight-bar {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+  }
+  .weight-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+  }
+  .weight-val {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-dark);
+    transition: color 0.3s;
+  }
+  .weight-val.alert-wt { color: var(--accent-red); }
+
+  /* Temp sensor */
+  .temp-row {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+  }
+  .temp-indicator {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+  }
+  .temp-val {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .rsp-status {
+    text-align: center;
+    margin-top: 12px;
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--accent-green);
+    transition: color 0.3s;
+    min-height: 20px;
+  }
+  .rsp-status.danger {
+    color: var(--accent-red);
+    animation: text-blink 0.6s infinite;
+  }
+
+  /* ── Main Alert Bar ── */
+  .alert-bar {
+    background: var(--bg-card);
+    border: 1px solid var(--rose-pale);
+    border-radius: 16px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 64px;
+    transition: all 0.4s ease;
+    box-shadow: var(--shadow-soft);
+  }
+  .alert-bar.danger {
+    border-color: var(--accent-red);
+    background: #fff0f0;
+    box-shadow: var(--glow-red);
+  }
+  .alert-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+    background: rgba(76,175,80,0.1);
+    border: 1px solid rgba(76,175,80,0.25);
+  }
+  .alert-bar.danger .alert-icon {
+    background: rgba(211,47,47,0.1);
+    border-color: rgba(211,47,47,0.3);
+    animation: icon-pulse 0.6s infinite;
+  }
+  .alert-text h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--accent-green);
+    transition: color 0.3s;
+  }
+  .alert-bar.danger .alert-text h3 { color: var(--accent-red); }
+  .alert-text p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  /* ── Escalation Steps ── */
+  .escalation {
+    background: var(--bg-card);
+    border: 1px solid var(--rose-pale);
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow-soft);
+  }
+  .esc-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--rose-deep);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .esc-steps {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .esc-step {
+    flex: 1;
+    min-width: 120px;
+    padding: 12px;
+    border-radius: 12px;
+    text-align: center;
+    background: rgba(61,43,51,0.03);
+    border: 1px solid var(--rose-pale);
+    transition: all 0.4s;
+  }
+  .esc-step .step-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--rose);
+  }
+  .esc-step .step-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    line-height: 1.3;
+  }
+  .esc-step.active-step {
+    background: rgba(211,47,47,0.06);
+    border-color: var(--accent-red);
+    box-shadow: 0 0 12px rgba(211,47,47,0.15);
+  }
+  .esc-step.active-step .step-num { color: var(--accent-red); }
+
+  /* ── Info Row ── */
+  .info-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .info-card {
+    background: var(--bg-card);
+    border: 1px solid var(--rose-pale);
+    border-radius: 14px;
+    padding: 14px;
+    text-align: center;
+    box-shadow: var(--shadow-soft);
+  }
+  .info-card-icon { font-size: 22px; margin-bottom: 4px; }
+  .info-card-val {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-dark);
+  }
+  .info-card-label {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  /* ── Controls ── */
+  .controls {
+    text-align: center;
+    padding: 8px 0 16px;
+  }
+  .controls p {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+  }
+  .btn-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn {
+    font-family: 'Source Serif 4', serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 12px;
+    border: 1px solid var(--rose-light);
+    background: var(--bg-card);
+    color: var(--rose-deep);
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: var(--shadow-soft);
+  }
+  .btn:hover {
+    background: var(--rose-pale);
+    border-color: var(--rose);
+  }
+
+  /* ── Annotations ── */
+  .annotations {
+    max-width: 880px;
+    margin: 0 auto 30px;
+    padding: 0 14px;
+  }
+  .ann-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    color: var(--rose-deep);
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 14px;
+    padding-top: 10px;
+    border-top: 2px solid var(--rose-pale);
+  }
+  .ann-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+  }
+  .ann-card {
+    background: var(--bg-card);
+    border: 1px solid var(--rose-pale);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow-soft);
+  }
+  .ann-card h4 {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--rose-deep);
+    margin-bottom: 6px;
+  }
+  .ann-card p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+  .principle {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: var(--rose-pale);
+    color: var(--rose-deep);
+    border: 1px solid var(--rose-light);
+  }
+
+  /* ── Animations ── */
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  @keyframes seat-pulse {
+    0%, 100% { box-shadow: 0 0 12px rgba(211,47,47,0.3); }
+    50% { box-shadow: 0 0 24px rgba(211,47,47,0.5); }
+  }
+  @keyframes text-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+  @keyframes icon-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+  }
+  @keyframes icon-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+
+  @media (max-width: 600px) {
+    .cluster-grid { grid-template-columns: 1fr; gap: 14px; }
+    .info-row { grid-template-columns: 1fr; }
+    .esc-steps { flex-direction: column; }
+    .ann-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Proton Saga Premium MC3</h1>
+  <p>Redesigned HMI — Rear Seat Child Presence Detection</p>
+  <div class="header-line"></div>
+</div>
+
+<div class="dashboard">
+
+  <!-- Instrument Cluster -->
+  <div class="section-label">Digital Instrument Cluster</div>
+  <div class="cluster">
+    <div class="cluster-grid">
+      <div class="gauge-wrap">
+        <div class="gauge-label">RPM × 1000</div>
+        <svg class="gauge-svg" viewBox="0 0 120 80">
+          <path d="M 10 70 A 50 50 0 0 1 110 70" fill="none" class="gauge-arc-bg" stroke-width="6" stroke-linecap="round"/>
+          <path d="M 10 70 A 50 50 0 0 1 110 70" fill="none" stroke="#e8b4b8" stroke-width="6" stroke-linecap="round" stroke-dasharray="157" stroke-dashoffset="110"/>
+          <text x="60" y="58" text-anchor="middle" fill="#fff" font-family="Playfair Display" font-size="20" font-weight="700">2.4</text>
+          <text x="60" y="72" text-anchor="middle" fill="#e8b4b8" font-size="11" opacity="0.6">RPM</text>
+        </svg>
+      </div>
+
+      <div class="speed-center">
+        <div class="speed-big">0</div>
+        <div class="speed-label">KM / H</div>
+        <div class="gear-indicator">P</div>
+      </div>
+
+      <div class="gauge-wrap">
+        <div class="gauge-label">Fuel</div>
+        <svg class="gauge-svg" viewBox="0 0 120 80">
+          <path d="M 10 70 A 50 50 0 0 1 110 70" fill="none" class="gauge-arc-bg" stroke-width="6" stroke-linecap="round"/>
+          <path d="M 10 70 A 50 50 0 0 1 110 70" fill="none" stroke="#c9a96e" stroke-width="6" stroke-linecap="round" stroke-dasharray="157" stroke-dashoffset="47"/>
+          <text x="60" y="58" text-anchor="middle" fill="#fff" font-family="Playfair Display" font-size="20" font-weight="700">70</text>
+          <text x="60" y="72" text-anchor="middle" fill="#e8b4b8" font-size="11" opacity="0.6">%</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rear Seat Detection Panel -->
+  <div class="section-label">Rear Seat Presence Detection</div>
+  <div class="rear-seat-panel">
+    <div class="rsp-title">
+      <span class="dot" id="sensorDot"></span>
+      Cabin Presence Monitoring
+    </div>
+
+    <div class="cabin-view">
+      <div class="car-outline"></div>
+      <span class="seat-label label-fl">Driver</span>
+      <span class="seat-label label-fr">Front</span>
+      <span class="seat-label label-rear">Rear Seats</span>
+      <div id="seatFL" class="seat seat-fl driver"></div>
+      <div id="seatFR" class="seat seat-fr"></div>
+      <div id="seatRL" class="seat seat-rl"></div>
+      <div id="seatRR" class="seat seat-rr"></div>
+      <span id="childIcon" class="child-icon">👶</span>
+    </div>
+
+    <div class="weight-bar">
+      <span class="weight-label">Rear-Right Pressure Sensor:</span>
+      <span id="weightVal" class="weight-val">0.0 kg</span>
+    </div>
+    <div class="temp-row">
+      <span class="temp-indicator">Cabin Temp:</span>
+      <span id="tempVal" class="temp-val" style="color:var(--accent-green)">26°C</span>
+    </div>
+
+    <div id="rspStatus" class="rsp-status">✓ All Seats Clear — No Rear Passenger Detected</div>
+  </div>
+
+  <!-- Alert Bar -->
+  <div id="alertBar" class="alert-bar">
+    <div class="alert-icon">✓</div>
+    <div class="alert-text">
+      <h3>REAR SEAT REMINDER — INACTIVE</h3>
+      <p>System monitors when engine stops and driver door opens</p>
+    </div>
+  </div>
+
+  <!-- Escalation Stages -->
+  <div class="escalation">
+    <div class="esc-title">Multi-Stage Alert Escalation</div>
+    <div class="esc-steps">
+      <div id="step1" class="esc-step">
+        <div class="step-num">1</div>
+        <div class="step-label">Dashboard Warning<br><small>Visual + chime</small></div>
+      </div>
+      <div id="step2" class="esc-step">
+        <div class="step-num">2</div>
+        <div class="step-label">Loud Horn Pulse<br><small>After 30 seconds</small></div>
+      </div>
+      <div id="step3" class="esc-step">
+        <div class="step-num">3</div>
+        <div class="step-label">Phone Alert Sent<br><small>SMS + Push notification</small></div>
+      </div>
+      <div id="step4" class="esc-step">
+        <div class="step-num">4</div>
+        <div class="step-label">Emergency Call<br><small>Auto-dial if no response</small></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info Row -->
+  <div class="info-row">
+    <div class="info-card">
+      <div class="info-card-icon">🌡️</div>
+      <div class="info-card-val">32°</div>
+      <div class="info-card-label">Outside Temp</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-icon">⏱️</div>
+      <div id="timeVal" class="info-card-val">08:15</div>
+      <div class="info-card-label">Time</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-icon">📍</div>
+      <div class="info-card-val">536</div>
+      <div class="info-card-label">ODO (km)</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <p>▼ Interactive Demo — Simulate Scenarios ▼</p>
+    <div class="btn-group">
+      <button class="btn" onclick="simNormal()">Normal — No Child</button>
+      <button class="btn" onclick="simChild()">👶 Child in Rear Seat</button>
+      <button class="btn" onclick="simForgotten()">🚨 Driver Exits — Child Left Behind</button>
+    </div>
+  </div>
+</div>
+
+<!-- Annotations -->
+<div class="annotations">
+  <div class="ann-title">13 Principles of Display Design Applied</div>
+  <div class="ann-grid">
+    <div class="ann-card">
+      <h4>1. Pressure Sensor Detection</h4>
+      <p>Weight sensors in rear seats detect child/car seat presence even when the driver cannot physically see the back seat due to seat position and height limitations — directly solving Amin's visibility obstruction.</p>
+      <span class="principle">Redundancy Gain</span>
+    </div>
+    <div class="ann-card">
+      <h4>2. Multi-Stage Escalation</h4>
+      <p>Unlike the original single low-intensity chime, the redesign escalates through 4 stages: dashboard visual → horn pulse → phone alert → emergency call. Each stage increases urgency if no response.</p>
+      <span class="principle">Discriminability</span>
+    </div>
+    <div class="ann-card">
+      <h4>3. Cabin Temperature Monitor</h4>
+      <p>Real-time interior temperature display turns red when dangerous. Replaces mental estimation with a direct visual readout — reducing cognitive load on a stressed/distracted parent.</p>
+      <span class="principle">Replace Memory with Visual</span>
+    </div>
+    <div class="ann-card">
+      <h4>4. Bird's-Eye Seat Map</h4>
+      <p>Top-down cabin view shows which seats are occupied using colour coding (green = driver, red = unattended passenger). Provides spatial awareness the driver lacks due to physical obstruction.</p>
+      <span class="principle">Pictorial Realism</span>
+    </div>
+    <div class="ann-card">
+      <h4>5. Phone Push + SMS Alert</h4>
+      <p>When the driver walks away and the child is still detected, an automatic notification is sent to their phone. This multi-modal approach (auditory + visual + haptic) breaks through cognitive tunnel vision.</p>
+      <span class="principle">Multiple Resources (Wickens)</span>
+    </div>
+    <div class="ann-card">
+      <h4>6. Function Allocation</h4>
+      <p><strong>Machine handles:</strong> weight detection, temperature monitoring, alert escalation, phone notification, emergency calling. <strong>Human handles:</strong> final decision to return to the vehicle. This offloads memory and vigilance tasks to the system — the exact cognitive functions that failed due to Amin's high cognitive load and routine change.</p>
+      <span class="principle">Fitts' List — MABA-MABA</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentSim = 'normal';
+  let escalationTimer = null;
+
+  function resetAll() {
+    clearTimeout(escalationTimer);
+    currentSim = 'normal';
+    // Reset seats
+    document.getElementById('seatRR').classList.remove('occupied');
+    document.getElementById('seatRL').classList.remove('occupied');
+    document.getElementById('childIcon').classList.remove('show');
+    // Reset weight
+    document.getElementById('weightVal').textContent = '0.0 kg';
+    document.getElementById('weightVal').classList.remove('alert-wt');
+    // Reset temp
+    document.getElementById('tempVal').textContent = '26°C';
+    document.getElementById('tempVal').style.color = 'var(--accent-green)';
+    // Reset status
+    document.getElementById('rspStatus').textContent = '✓ All Seats Clear — No Rear Passenger Detected';
+    document.getElementById('rspStatus').classList.remove('danger');
+    // Reset alert bar
+    const bar = document.getElementById('alertBar');
+    bar.classList.remove('danger');
+    bar.innerHTML = '<div class="alert-icon">✓</div><div class="alert-text"><h3>REAR SEAT REMINDER — INACTIVE</h3><p>System monitors when engine stops and driver door opens</p></div>';
+    // Reset escalation
+    ['step1','step2','step3','step4'].forEach(id => document.getElementById(id).classList.remove('active-step'));
+    // Reset sensor dot
+    document.getElementById('sensorDot').style.background = 'var(--accent-green)';
+  }
+
+  function simNormal() { resetAll(); }
+
+  function simChild() {
+    resetAll();
+    currentSim = 'child';
+    setTimeout(() => {
+      document.getElementById('seatRR').classList.add('occupied');
+      document.getElementById('childIcon').classList.add('show');
+      document.getElementById('weightVal').textContent = '10.2 kg';
+      document.getElementById('weightVal').classList.add('alert-wt');
+      document.getElementById('rspStatus').textContent = '⚠ Rear-Right Seat Occupied — Child Detected (10.2 kg)';
+      document.getElementById('rspStatus').style.color = 'var(--accent-amber)';
+      document.getElementById('sensorDot').style.background = 'var(--accent-amber)';
+
+      const bar = document.getElementById('alertBar');
+      bar.classList.remove('danger');
+      bar.innerHTML = '<div class="alert-icon" style="background:rgba(249,168,37,0.1);border-color:rgba(249,168,37,0.3)">👶</div><div class="alert-text"><h3 style="color:var(--accent-amber)">CHILD PRESENCE DETECTED — MONITORING</h3><p>Rear seat reminder will activate when engine stops and driver door opens</p></div>';
+    }, 300);
+  }
+
+  function simForgotten() {
+    simChild();
+    setTimeout(() => {
+      // Stage 1: Dashboard warning
+      document.getElementById('rspStatus').textContent = '🚨 ENGINE OFF + DRIVER EXITED — CHILD STILL IN REAR SEAT';
+      document.getElementById('rspStatus').classList.add('danger');
+      document.getElementById('sensorDot').style.background = 'var(--accent-red)';
+
+      const bar = document.getElementById('alertBar');
+      bar.classList.add('danger');
+      bar.innerHTML = '<div class="alert-icon">🚨</div><div class="alert-text"><h3>⚠ CHECK REAR SEAT — CHILD LEFT IN VEHICLE</h3><p>Stage 1: Dashboard warning + alert chime activated</p></div>';
+
+      document.getElementById('step1').classList.add('active-step');
+      playBeep(660, 0.15, 3);
+
+      // Stage 2: Horn
+      escalationTimer = setTimeout(() => {
+        if(currentSim !== 'child') return;
+        document.getElementById('step2').classList.add('active-step');
+        bar.innerHTML = '<div class="alert-icon">📢</div><div class="alert-text"><h3>⚠ HORN PULSE ACTIVATED</h3><p>Stage 2: Repeated horn pulses to alert nearby individuals</p></div>';
+        playBeep(440, 0.2, 5);
+      }, 3000);
+
+      // Stage 3: Phone
+      escalationTimer = setTimeout(() => {
+        if(currentSim !== 'child') return;
+        document.getElementById('step3').classList.add('active-step');
+        bar.innerHTML = '<div class="alert-icon">📱</div><div class="alert-text"><h3>⚠ PHONE ALERT SENT TO DRIVER</h3><p>Stage 3: SMS + push notification sent — "Your child is still in the vehicle"</p></div>';
+
+        // Temperature rising
+        document.getElementById('tempVal').textContent = '38°C';
+        document.getElementById('tempVal').style.color = 'var(--accent-amber)';
+      }, 6000);
+
+      // Stage 4: Emergency
+      escalationTimer = setTimeout(() => {
+        if(currentSim !== 'child') return;
+        document.getElementById('step4').classList.add('active-step');
+        bar.innerHTML = '<div class="alert-icon">🆘</div><div class="alert-text"><h3>🆘 EMERGENCY SERVICES CONTACTED</h3><p>Stage 4: No response from driver — auto-dialing emergency number + GPS location shared</p></div>';
+
+        document.getElementById('tempVal').textContent = '42°C';
+        document.getElementById('tempVal').style.color = 'var(--accent-red)';
+      }, 9000);
+
+    }, 1500);
+  }
+
+  function playBeep(freq, vol, count) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      for(let i = 0; i < count; i++) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = 'sine';
+        gain.gain.value = vol;
+        osc.start(ctx.currentTime + i * 0.35);
+        osc.stop(ctx.currentTime + i * 0.35 + 0.15);
+      }
+    } catch(e) {}
+  }
+</script>
+
+</body>
+</html>
